@@ -572,7 +572,8 @@ let boardQuery = "";        // search box on the Crew Board
 let division = "all";       // crew division filter on the board and team calendar
 let pendingJob = null;      // a sold job waiting for the "is this complete?" check
 const history = [];         // snapshots for Undo
-const sampleReady = (window.claude && typeof window.claude.use === "function") ? window.claude.use("sample").catch(() => null) : Promise.resolve(null);
+const IN_VIEWER = !!(window.claude && typeof window.claude.use === "function");   // inside claude.ai, plain download links do nothing
+const sampleReady = IN_VIEWER ? window.claude.use("sample").catch(() => null) : Promise.resolve(null);
 
 function load(){
   try {
@@ -1314,7 +1315,7 @@ function openEmail(id){
     + '<div class="field"><label>Subject</label><input value="' + esc(e.subject) + '" readonly></div>'
     + '<div class="field" style="margin-top:12px"><label>Message</label><textarea readonly style="min-height:230px;font-family:var(--font-mono);font-size:12.5px">' + esc(e.body) + '</textarea></div>'
     + '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0">The calendar invite puts the job in the technician’s own calendar. In the real version this sends on its own when the job is assigned, and again if it moves.</p>'
-    + actionsBar('<a class="btn sm primary" href="' + mailto + '">' + ICON.note + 'Open in email app</a><button class="btn sm" data-action="copy" data-copy="email" data-id="' + j.id + '" type="button">' + ICON.copy + 'Copy email</button><a class="btn sm" href="' + ics + '" download="' + esc(j.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()) + '.ics">' + ICON.cal + 'Calendar invite (.ics)</a>'), true);
+    + actionsBar('<a class="btn sm primary" href="' + mailto + '">' + ICON.note + 'Open in email app</a><button class="btn sm" data-action="copy" data-copy="email" data-id="' + j.id + '" type="button">' + ICON.copy + 'Copy email</button>(IN_VIEWER ? '<button class="btn sm" data-action="copy" data-copy="ics" data-id="' + j.id + '" type="button">' + ICON.cal + 'Copy calendar invite</button>' : '<a class="btn sm" href="' + ics + '" download="' + esc(j.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()) + '.ics">' + ICON.cal + 'Calendar invite (.ics)</a>')), true);
 }
 
 /* Copy helper: clipboard where allowed, with a selectable fallback */
@@ -1369,7 +1370,7 @@ document.addEventListener("click", e => {
   if (a === "parts") { openParts(t.dataset.mech); return; }
   if (a === "briefing") { openBriefing(); return; }
   if (a === "tour") { tourStep(Number(t.dataset.step)); return; }
-  if (a === "copy") { const k = t.dataset.copy; copyText(k === "daysheet" ? daySheetText(t.dataset.mech, t.dataset.date) : k === "parts" ? partsText(t.dataset.mech) : k === "email" ? (function(){ const e = emailFor(job(t.dataset.id)); return "To: " + e.to + "\nSubject: " + e.subject + "\n\n" + e.body; })() : briefingText(), t); return; }
+  if (a === "copy") { const k = t.dataset.copy; copyText(k === "daysheet" ? daySheetText(t.dataset.mech, t.dataset.date) : k === "parts" ? partsText(t.dataset.mech) : k === "email" ? (function(){ const e = emailFor(job(t.dataset.id)); return "To: " + e.to + "\nSubject: " + e.subject + "\n\n" + e.body; })() : k === "ics" ? icsFor(job(t.dataset.id)) : briefingText(), t); return; }
   if (a === "email") { openEmail(id); return; }
   if (a === "confirmadd") { confirmAdd(); return; }
   if (a === "division") { division = t.dataset.div; render(); return; }
