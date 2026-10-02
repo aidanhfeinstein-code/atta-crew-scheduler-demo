@@ -67,6 +67,14 @@ svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-widt
 .nav button[aria-selected="true"] svg{color:var(--brand)}
 .nav button svg{color:var(--muted)}
 .nav .badge{margin-left:auto}
+.nav button.updates{margin-top:6px;border-top:1px solid var(--line);border-radius:0 0 10px 10px;padding-top:12px}
+.badge.brand{background:var(--brand);color:var(--brand-ink)}
+.field.error input,.field.error select,.field.error textarea{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-soft)}
+.field.error label{color:var(--danger)}
+.sug.unread{border-color:color-mix(in srgb,var(--brand) 45%,var(--line));background:color-mix(in srgb,var(--brand-soft) 35%,var(--surface))}
+.upd-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--muted);flex:none}
+.upd-ic.done{background:var(--ok-soft);color:var(--ok)} .upd-ic.onsite{background:var(--brand-soft);color:var(--brand)} .upd-ic.urgent{background:var(--danger-soft);color:var(--danger)}
+a.btn{text-decoration:none}
 .badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 7px;border-radius:999px;font-family:var(--font-mono);font-size:11.5px;font-weight:600;background:var(--surface-3);color:var(--muted)}
 .badge.warn{background:var(--warn-soft);color:var(--warn)}
 .badge.ok{background:var(--ok-soft);color:var(--ok)}
@@ -427,6 +435,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand);b
       <button role="tab" data-view="sold" id="tab-sold" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8.5h8M8 12.5h8M8 16.5h5"/></svg>Sold Jobs</button>
       <button role="tab" data-view="board" id="tab-board" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="5.5" height="16" rx="1.5"/><rect x="9.25" y="4" width="5.5" height="11" rx="1.5"/><rect x="15.5" y="4" width="5.5" height="14" rx="1.5"/></svg>Crew Board<span class="badge" id="queuePill">0</span></button>
       <button role="tab" data-view="team" id="tab-team" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Team Calendar</button>
+      <button type="button" id="updatesBtn" class="updates" title="What the crews have done"><svg class="i" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21h4"/></svg>Updates<span class="badge" id="updatesBadge">0</span></button>
     </nav>
     <div class="sb-section">
       <div class="sb-label">Crews <span>this week</span></div>
@@ -454,17 +463,21 @@ const ROWS = (DAY_END - DAY_START) * 2;
 const STORE_KEY = "atta-crew-demo-v2";
 const MARK = "data:image/png;base64,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";
 const MECHANICS = [
-  {id:"m1",  name:"Marco Bellini",     base:"Downtown",       h:205},
-  {id:"m2",  name:"Priya Natarajan",   base:"Downtown",       h:160},
-  {id:"m3",  name:"Dev Okafor",        base:"North York",     h:28},
-  {id:"m4",  name:"Lena Kowalski",     base:"Scarborough",    h:275},
-  {id:"m5",  name:"Tomasz Nowak",      base:"Vaughan",        h:340},
-  {id:"m6",  name:"Aisha Rahman",      base:"Escalator crew", h:95},
-  {id:"m7",  name:"Sean Gallagher",    base:"Mississauga",    h:12},
-  {id:"m8",  name:"Yuki Tanaka",       base:"Etobicoke",      h:225},
-  {id:"m9",  name:"Carlos Mendes",     base:"Markham",        h:50},
-  {id:"m10", name:"Hannah Whitfield",  base:"Escalator crew", h:300},
+  {id:"m1",  name:"Marco Bellini",     base:"Downtown",       div:"service",       h:205},
+  {id:"m2",  name:"Priya Natarajan",   base:"Downtown",       div:"service",       h:160},
+  {id:"m3",  name:"Dev Okafor",        base:"North York",     div:"modernization", h:28},
+  {id:"m4",  name:"Lena Kowalski",     base:"Scarborough",    div:"service",       h:275},
+  {id:"m5",  name:"Tomasz Nowak",      base:"Vaughan",        div:"service",       h:340},
+  {id:"m6",  name:"Aisha Rahman",      base:"Escalator crew", div:"escalator",     h:95},
+  {id:"m7",  name:"Sean Gallagher",    base:"Mississauga",    div:"service",       h:12},
+  {id:"m8",  name:"Yuki Tanaka",       base:"Etobicoke",      div:"service",       h:225},
+  {id:"m9",  name:"Carlos Mendes",     base:"Markham",        div:"service",       h:50},
+  {id:"m10", name:"Hannah Whitfield",  base:"Escalator crew", div:"escalator",     h:300},
 ];
+/* Sample addresses only. The real version uses each crew's ATTA mailbox. */
+MECHANICS.forEach(m => { m.email = m.name.toLowerCase().replace(/[^a-z ]/g, "").replace(" ", ".") + "@atta-demo.example"; });
+const DIVISIONS = {all:"All crews", service:"Service", modernization:"Modernization", escalator:"Escalators"};
+const crews = () => MECHANICS.filter(m => division === "all" || m.div === division);
 /* Which cities count as "home turf" for each base. First entry is the best match. */
 const BASE_CITY = {"Downtown":["Toronto"],"North York":["North York","Toronto"],"Scarborough":["Scarborough","Toronto","Markham"],"Vaughan":["Vaughan","Concord","North York"],
   "Mississauga":["Mississauga","Oakville","Brampton","Etobicoke"],"Etobicoke":["Etobicoke","Toronto","Mississauga"],"Markham":["Markham","Richmond Hill","Scarborough"],"Escalator crew":[]};
@@ -487,7 +500,8 @@ const ICON = {
   search:'<svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg>',
   copy:'<svg class="i" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
   wand:'<svg class="i" viewBox="0 0 24 24"><path d="M4 20l10-10"/><path d="M15 4l.9 2.1L18 7l-2.1.9L15 10l-.9-2.1L12 7l2.1-.9z"/><path d="M19 12l.6 1.4L21 14l-1.4.6L19 16l-.6-1.4L17 14l1.4-.6z"/></svg>',
-  note:'<svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h6M9 16h6"/></svg>'
+  note:'<svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h6M9 16h6"/></svg>',
+  check:'<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>'
 };
 
 /* ---------- Date helpers (local dates only, never UTC) ---------- */
@@ -540,7 +554,11 @@ function seed(){
   ];
   jobs.forEach(j => { j.status = j.start < TODAY ? "done" : "scheduled"; j.urgent = false; });
   const first = jobs.find(j => j.start === TODAY && j.mechanic); if (first) first.status = "onsite";
-  return { jobs };
+  const activity = [];
+  const now = Date.now();
+  if (first) activity.push({id: "a1", ts: now - 42*60000, kind: "onsite", jobId: first.id, text: mech(first.mechanic).name + " is on site at " + first.address, read: false});
+  const p = jobs.find(j => j.id === "p3"); if (p) activity.push({id: "a2", ts: now - 6*3600000, kind: "done", jobId: p.id, text: mech(p.mechanic).name + " finished " + p.title, read: true});
+  return { jobs, activity };
 }
 
 /* ---------- State ---------- */
@@ -551,13 +569,15 @@ let monthOffset = 0;        // months from the current month
 let teamMode = "week";      // "week" or "month"
 let calMech = "m1";         // mechanic whose calendar is open
 let boardQuery = "";        // search box on the Crew Board
+let division = "all";       // crew division filter on the board and team calendar
+let pendingJob = null;      // a sold job waiting for the "is this complete?" check
 const history = [];         // snapshots for Undo
 const sampleReady = (window.claude && typeof window.claude.use === "function") ? window.claude.use("sample").catch(() => null) : Promise.resolve(null);
 
 function load(){
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) { const s = JSON.parse(raw); if (s && Array.isArray(s.jobs) && s.jobs.length) { s.jobs.forEach(j => { j.status = j.status || "scheduled"; j.urgent = !!j.urgent; }); return s; } }
+    if (raw) { const s = JSON.parse(raw); if (s && Array.isArray(s.jobs) && s.jobs.length) { s.jobs.forEach(j => { j.status = j.status || "scheduled"; j.urgent = !!j.urgent; }); s.activity = Array.isArray(s.activity) ? s.activity : []; return s; } }
   } catch (e) {}
   return seed();
 }
@@ -646,6 +666,8 @@ function render(){
   document.querySelectorAll(".nav button[data-view]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.view === (view === "mech" ? "board" : view))));
   const q = state.jobs.filter(j => !j.mechanic).length;
   const pill = $("#queuePill"); pill.textContent = q; pill.className = "badge" + (q ? " warn" : " ok"); pill.title = q + " unassigned";
+  const unread = (state.activity || []).filter(a => !a.read).length;
+  const ub = $("#updatesBadge"); if (ub) { ub.textContent = unread; ub.className = "badge" + (unread ? " brand" : ""); }
   renderSidebar();
   if (view === "sold") renderSold();
   else if (view === "board") renderBoard();
@@ -667,6 +689,9 @@ function renderSidebar(){
     return '<button type="button" class="crew' + (view === "mech" && calMech === m.id ? " active" : "") + (over ? " over" : "") + '" data-action="opencal" data-mech="' + m.id + '" title="Open ' + esc(m.name) + '’s calendar">'
       + avatar(m, "sm") + '<span class="cn">' + esc(m.name) + '</span><span class="cb"><i class="' + (over ? "hot" : "") + '" style="width:' + Math.min(100, hrs / 40 * 100).toFixed(0) + '%"></i></span><span class="ch">' + fmtHrs(hrs) + '</span></button>';
   }).join("");
+}
+function divisionTabs(){
+  return '<div class="tabs small" role="group" aria-label="Division">' + Object.entries(DIVISIONS).map(([k,v]) => '<button type="button" data-action="division" data-div="' + k + '" aria-selected="' + (division === k) + '">' + v + '</button>').join("") + '</div>';
 }
 function weekNav(){
   return '<div class="weeknav"><button class="btn sm icon" data-action="week" data-n="-1" type="button" aria-label="Previous week">&larr;</button>'
@@ -692,7 +717,7 @@ function renderSold(){
     + '<textarea id="note" placeholder="e.g. Sold: door operator swap at 55 King St, car 3, about 4 hrs, Thursday">' + esc(SAMPLE_NOTE) + '</textarea>'
     + '<div class="row" style="margin-top:12px"><button class="btn primary" id="extractBtn" type="button">' + ICON.spark + 'Fill fields with AI</button>'
     + '<button class="btn" id="manualBtn" type="button">Fill in by hand</button><span class="status" id="aiStatus"></span></div>'
-    + '<form id="jobForm" class="form" hidden autocomplete="off">' + jobFields("f_")
+    + '<form id="jobForm" class="form" hidden autocomplete="off" novalidate>' + jobFields("f_")
     + '<div class="full row"><button class="btn brand" type="submit">Add to unassigned queue</button><span class="status" id="formStatus"></span></div>'
     + '</form>'
     + '<div class="privacy">' + ICON.lock + '<div><strong>No pricing stored.</strong> There is no price field on purpose. The board only holds what a mechanic needs to do the job.</div></div>'
@@ -790,10 +815,32 @@ function fallback(note, why){
   fillForm("f_", { title: "", type, hours: h ? Math.round(Number(h[1])*2)/2 : "", address: a ? a[1].trim() : "", start, startHour: 7, parts: [], desc: clean.slice(0, 300) }, false);
   setStatus(why + " Fill in the rest by hand.", false, priceNote(note));
 }
+/* Critical fields must be filled before a job can go to the queue. Then one "is this complete?" check, parts included. */
 function onAddJob(ev){
   ev.preventDefault();
-  const j = Object.assign({id: uid(), mechanic: null, status: "scheduled", urgent: false}, readForm("f_"));
-  if (!j.title || !j.address) { $("#formStatus").textContent = "Needs a description and an address."; return; }
+  const v = readForm("f_");
+  const missing = [];
+  if (!v.title) missing.push(["f_title", "Short job description"]);
+  if (!v.address) missing.push(["f_address", "Address"]);
+  if (!$("#f_start").value) missing.push(["f_start", "Start date"]);
+  if (!(Number($("#f_hours").value) > 0)) missing.push(["f_hours", "Hours needed"]);
+  document.querySelectorAll("#jobForm .field").forEach(f => f.classList.remove("error"));
+  if (missing.length) {
+    missing.forEach(([id]) => $("#" + id).closest(".field").classList.add("error"));
+    $("#formStatus").innerHTML = '<span class="pill danger">Fill in: ' + esc(missing.map(m => m[1]).join(", ")) + '</span>';
+    $("#" + missing[0][0]).focus(); return;
+  }
+  $("#formStatus").textContent = "";
+  pendingJob = Object.assign({id: uid(), mechanic: null, status: "scheduled", urgent: false}, v);
+  const j = pendingJob;
+  openDialog('<h3>Is this complete?</h3><div class="sub">' + tpill(j.type) + '<span>One look before it goes to the crews.</span></div>'
+    + '<dl class="dl"><dt>Job</dt><dd>' + esc(j.title) + '</dd><dt>Address</dt><dd>' + esc(j.address) + '</dd><dt>Start</dt><dd>' + fmtDate(j.start) + ' at ' + fmtTime(j.startHour) + '</dd><dt>Hours</dt><dd>' + fmtHrs(j.hours) + '</dd>'
+    + '<dt>Parts</dt><dd>' + (j.parts.length ? '<ul>' + j.parts.map(p => '<li>' + esc(p) + '</li>').join("") + '</ul>' : '<span class="pill warn">' + ICON.alert + 'No parts listed. If this job needs parts, nobody will order them.</span>') + '</dd>'
+    + '<dt>Notes</dt><dd>' + (j.desc ? esc(j.desc) : '<span style="color:var(--muted)">None</span>') + '</dd></dl>'
+    + '<div class="actions"><button class="btn sm brand" data-action="confirmadd" type="button">Yes, add to the queue</button><button class="btn sm ghost" data-action="close" type="button">Go back and fix it</button></div>');
+}
+function confirmAdd(){
+  if (!pendingJob) return; const j = pendingJob; pendingJob = null; closeModal();
   snap(); state.jobs.push(j); save(); render();
   toast("Added to the unassigned queue.", [["Open Crew Board", () => { view = "board"; render(); }]], "", true);
 }
@@ -803,7 +850,7 @@ function renderBoard(){
   const dates = weekDates();
   const queue = state.jobs.filter(j => !j.mechanic).sort((a,b) => (b.urgent - a.urgent) || a.start.localeCompare(b.start));
   const cards = queue.length ? queue.map(cardHTML).join("") : '<div class="empty"><img src="' + MARK + '" alt="">Queue is empty. Every sold job has a mechanic.</div>';
-  const cols = MECHANICS.map((m, i) => {
+  const cols = crews().map((m, i) => {
     const jobs = state.jobs.filter(j => j.mechanic === m.id).sort((a,b) => a.start.localeCompare(b.start) || a.startHour - b.startHour);
     const loads = dates.map(d => dayLoad(m.id, d));
     const weekHrs = loads.reduce((a,l) => a + l.hours, 0);
@@ -819,7 +866,7 @@ function renderBoard(){
   }).join("");
   main.innerHTML =
     pageHead("Crew Board", "Drag a job onto a mechanic. It lands on their calendar. Click a name to open it.",
-      '<label class="search">' + ICON.search + '<input id="boardSearch" type="search" placeholder="Find a job or address" value="' + esc(boardQuery) + '" aria-label="Find a job"></label>' + weekNav())
+      divisionTabs() + '<label class="search">' + ICON.search + '<input id="boardSearch" type="search" placeholder="Find a job or address" value="' + esc(boardQuery) + '" aria-label="Find a job"></label>' + weekNav())
     + '<div class="content board"><aside class="rail"><h3>' + ICON.inbox + 'Unassigned <span class="pill warn">' + queue.length + '</span></h3><p class="hint">New sold jobs wait here until someone drags them onto a crew, or let the board pick.</p>'
     + (queue.length ? '<div class="railtools"><button class="btn sm primary" data-action="autoassign" type="button">' + ICON.wand + 'Auto-assign all</button></div>' : '')
     + '<div class="cards" data-drop="queue">' + cards + '</div></aside>'
@@ -891,14 +938,14 @@ function legendHTML(){ return '<span style="margin-left:auto"></span>' + Object.
 function teamHead(){
   const toggle = '<div class="tabs small" role="group" aria-label="Zoom"><button type="button" data-action="teammode" data-mode="week" aria-selected="' + (teamMode === "week") + '">Week</button>'
     + '<button type="button" data-action="teammode" data-mode="month" aria-selected="' + (teamMode === "month") + '">Month</button></div>';
-  return function(tools){ return pageHead("Team Calendar", (teamMode === "week" ? 'Everyone, one week. Red cells are over ' + CAPACITY + ' hours or have jobs on top of each other.' : 'The whole month at a glance. Click a day to open that week.'), toggle + tools); };
+  return function(tools){ return pageHead("Team Calendar", (teamMode === "week" ? 'Everyone, one week. Red cells are over ' + CAPACITY + ' hours or have jobs on top of each other.' : 'The whole month at a glance. Click a day to open that week.'), toggle + (teamMode === "week" ? divisionTabs() : "") + tools); };
 }
 function stat(cls, icon, v, k){ return '<div class="stat ' + cls + '"><div class="ic">' + icon + '</div><div><div class="v">' + v + '</div><div class="k">' + k + '</div></div></div>'; }
 function renderTeam(){
   const dates = weekDates();
   const queue = state.jobs.filter(j => !j.mechanic).sort((a,b) => (b.urgent - a.urgent) || a.start.localeCompare(b.start));
   let overCells = 0, overMechs = 0, weekHrs = 0;
-  const rows = MECHANICS.map(m => {
+  const rows = crews().map(m => {
     const loads = dates.map(d => dayLoad(m.id, d));
     const tot = loads.reduce((a,l) => a + l.hours, 0); weekHrs += tot;
     const anyOver = loads.some(l => l.over); if (anyOver) overMechs++;
@@ -919,7 +966,7 @@ function renderTeam(){
     + stat(overCells ? "bad" : "good", ICON.alert, overCells, 'over-booked day' + (overCells === 1 ? "" : "s"))
     + stat(overMechs ? "bad" : "good", ICON.users, overMechs, 'mechanic' + (overMechs === 1 ? "" : "s") + ' to rebalance')
     + stat(queue.length ? "warn" : "good", ICON.inbox, queue.length, 'unassigned job' + (queue.length === 1 ? "" : "s"))
-    + stat("", ICON.clock, Math.round(weekHrs), 'crew hours of ' + (MECHANICS.length * CAPACITY * 5))
+    + stat("", ICON.clock, Math.round(weekHrs), 'crew hours of ' + (crews().length * CAPACITY * 5))
     + '</div>'
     + '<div class="calwrap"><div class="calscroll"><table class="team">' + head + qrow + rows + '</table></div>'
     + '<div class="calfoot"><span>Drag a job into another cell to move it to that crew and day.</span>' + legendHTML() + '</div></div></div>';
@@ -992,9 +1039,28 @@ function adjust(id, n){
   toast(j.title + ": now " + fmtHrs(j.hours) + (seg.length > 1 ? ", runs to " + fmtDate(seg[seg.length-1].date) : "") + (L && L.over ? ". Over-booked." : "."), [], L && L.over ? "danger" : "", true);
   const el = document.querySelector('[data-drag="' + id + '"]'); if (el) el.focus();
 }
+function logActivity(kind, jobId, text){
+  state.activity = state.activity || [];
+  state.activity.unshift({id: "a" + Date.now().toString(36), ts: Date.now(), kind, jobId, text, read: false});
+  if (state.activity.length > 40) state.activity.length = 40;
+}
 function setJobStatus(id, status){
-  const j = job(id); if (!j || !STATUS[status]) return;
-  snap(); j.status = status; save();
+  const j = job(id); if (!j || !STATUS[status] || j.status === status) return;
+  snap(); j.status = status;
+  const who = j.mechanic ? mech(j.mechanic).name : "Office";
+  if (status === "done") logActivity("done", j.id, who + " finished " + j.title);
+  else if (status === "onsite") logActivity("onsite", j.id, who + " is on site at " + j.address);
+  save();
+}
+const ago = ts => { const m = Math.max(1, Math.round((Date.now() - ts) / 60000)); return m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
+function openUpdates(){
+  const list = state.activity || [];
+  const rows = list.length ? list.map(a => '<div class="sug' + (a.read ? "" : " unread") + '"><span class="upd-ic ' + a.kind + '">' + (a.kind === "done" ? ICON.check : a.kind === "urgent" ? ICON.alert : ICON.clock) + '</span>'
+    + '<div><div class="n">' + esc(a.text) + '</div><div class="why">' + ago(a.ts) + (a.read ? "" : ' &middot; <span class="good">new</span>') + '</div></div>'
+    + (job(a.jobId) ? '<button class="btn sm" data-action="open" data-id="' + a.jobId + '" type="button">Open job</button>' : '<span></span>') + '</div>').join("")
+    : '<div class="empty">Nothing yet. When a technician taps On site or Done on their day sheet, it shows up here.</div>';
+  openDialog('<h3>Updates</h3><div class="sub">' + ICON.clock + '<span>What the crews have done, as it happens. In the real version this also fills from Liftkeeper when a job is completed there.</span></div><div class="suglist">' + rows + '</div>'
+    + actionsBar(list.some(a => !a.read) ? '<button class="btn sm" data-action="readall" type="button">Mark all read</button>' : ''));
 }
 function autoAssign(){
   const queue = state.jobs.filter(j => !j.mechanic).sort((a,b) => (b.urgent - a.urgent) || a.start.localeCompare(b.start));
@@ -1028,7 +1094,7 @@ function openJob(id, edit){
     ? '<div class="actions"><button class="btn sm primary" data-action="saveedit" data-id="' + j.id + '" type="button">Save changes</button><button class="btn sm ghost" data-action="open" data-id="' + j.id + '" type="button">Cancel</button></div>'
     : '<div class="actions"><button class="btn sm" data-action="adj" data-id="' + j.id + '" data-n="0.5" type="button">+30 min</button><button class="btn sm" data-action="adj" data-id="' + j.id + '" data-n="1" type="button">+1 hr</button>'
     + '<button class="btn sm" data-action="edit" data-id="' + j.id + '" type="button">Edit</button>'
-    + (m ? '<button class="btn sm" data-action="unassign" data-id="' + j.id + '" type="button">Send back to queue</button>' : '<button class="btn sm brand" data-action="suggest" data-id="' + j.id + '" type="button">' + ICON.wand + 'Suggest a crew</button>')
+    + (m ? '<button class="btn sm" data-action="email" data-id="' + j.id + '" type="button">' + ICON.note + 'Email technician</button><button class="btn sm" data-action="unassign" data-id="' + j.id + '" type="button">Send back to queue</button>' : '<button class="btn sm brand" data-action="suggest" data-id="' + j.id + '" type="button">' + ICON.wand + 'Suggest a crew</button>')
     + '<span class="spacer"></span><button class="btn sm ghost" data-action="remove" data-id="' + j.id + '" type="button">Remove job</button><button class="btn sm primary" data-action="close" type="button">Close</button></div>';
   openDialog('<h3>' + esc(j.title) + '</h3><div class="sub">' + tpill(j.type) + urgentPill(j) + (m ? '<span style="display:inline-flex;align-items:center;gap:6px">' + avatar(m, "sm") + 'Assigned to ' + esc(m.name) + '</span>' : '<span class="pill warn">Unassigned</span>') + '</div>' + body + actions);
   if (edit) { fillForm("e_", j, false); $("#e_form").addEventListener("submit", ev => { ev.preventDefault(); saveEdit(j.id); }); }
@@ -1060,6 +1126,7 @@ function openEmergency(){
     + field("full", "Address", '<input id="em_address" required value="100 Queen St W, Toronto">')
     + field("full", "What is happening", '<input id="em_title" required value="Entrapment, 2 passengers in car 1">')
     + field("", "Hours needed", '<input id="em_hours" type="number" min="0.5" step="0.5" value="2">')
+    + '<p class="full" style="margin:0;font-size:12.5px;color:var(--muted)">Daytime callouts for the service side. In the real version, calls dispatched by Firetronics after hours land here on their own, already matched to the crew for that area.</p>'
     + '<div class="full actions" style="margin-top:6px"><button class="btn danger" type="submit">' + ICON.alert + 'Find who is free now</button><button class="btn ghost" data-action="close" type="button">Cancel</button></div></form>');
   $("#em_form").addEventListener("submit", ev => {
     ev.preventDefault();
@@ -1067,7 +1134,7 @@ function openEmergency(){
     if (d.getDay() === 0 || d.getDay() === 6 || h > DAY_END - 0.5) { d = nextWeekday(d); h = DAY_START; } else if (h < DAY_START) h = DAY_START;
     const j = {id: uid(), type: "repair", title: $("#em_title").value.trim() || "Emergency call", address: $("#em_address").value.trim() || "Address to confirm", start: iso(d), startHour: h,
       hours: Math.max(0.5, Number($("#em_hours").value) || 2), parts: [], desc: "Emergency call logged " + fmtDate(TODAY) + " " + fmtTime(now.getHours() + now.getMinutes()/60) + ". Customer waiting on site.", mechanic: null, status: "scheduled", urgent: true};
-    snap(); state.jobs.push(j); save(); render();
+    snap(); state.jobs.push(j); logActivity("urgent", j.id, "Emergency call logged: " + j.title + ", " + j.address); save(); render();
     openSuggest(j.id, "Who can go now? " + fmtDate(j.start) + " " + fmtTime(j.startHour));
   });
 }
@@ -1169,12 +1236,12 @@ function briefingText(){ const b = $("#briefBox"); return b ? "ATTA morning brie
 /* ---------- Guided tour: eight steps, each one navigates and explains itself in a toast ---------- */
 const TOUR = [
   {t:"Sold Jobs", d:"Paste a job note the way it was sold. Click Fill fields with AI and the address, date, hours, parts and notes fill themselves. There is no price field.", go:() => { view = "sold"; render(); }},
-  {t:"Unassigned queue", d:"New jobs wait here until they have a crew. Drag a card onto a mechanic, or click the wand for a suggestion.", go:() => { view = "board"; render(); }},
+  {t:"Unassigned queue", d:"New jobs wait here until they have a crew. Drag a card onto a mechanic, or click the wand for a suggestion. The tabs at the top switch between Service, Modernization and Escalator crews.", go:() => { view = "board"; division = "all"; render(); }},
   {t:"Suggest a crew", d:"The board ranks all ten mechanics on area, hours already booked and escalator work, and says why. One click assigns.", go:() => { view = "board"; render(); const j = state.jobs.find(x => !x.mechanic); if (j) openSuggest(j.id); }},
   {t:"A mechanic\u2019s week", d:"Each job is a block. Long jobs split across days on their own. Use +30 min and +1 hr, or drag a block to another day or time.", go:() => { calMech = "m1"; weekOffset = 0; view = "mech"; render(); }},
   {t:"Team Calendar", d:"Everyone at once. Red cells are over 8 hours or overlapping. Drag between cells to rebalance. Switch to Month to zoom out further.", go:() => { teamMode = "week"; weekOffset = 0; view = "team"; render(); }},
   {t:"Emergency call", d:"An entrapment comes in. Type the address, and the board shows who can go right now, closest first.", go:() => { view = "board"; render(); openEmergency(); }},
-  {t:"Day sheet and parts", d:"What the mechanic sees on a phone: address, parts, notes, and a Done button that flows back to the board. Parts this week adds up everything to stage.", go:() => { calMech = "m6"; weekOffset = 0; view = "mech"; render(); openDaySheet("m6"); }},
+  {t:"Day sheet and parts", d:"What the mechanic sees on a phone: address, parts, notes, and a Done button. When they tap Done, the office gets a ping in Updates. Email technician sends the job with a calendar invite.", go:() => { calMech = "m6"; weekOffset = 0; view = "mech"; render(); openDaySheet("m6"); }},
   {t:"Nothing gets lost", d:"Every action has Undo. Search finds any address. Keys 1, 2, 3 switch views, Z undoes, and ? opens this tour. Reset demo puts the sample data back.", go:() => { closeModal(); view = "board"; render(); }},
 ];
 function openTour(){
@@ -1211,11 +1278,43 @@ function applyHash(){
     briefing: () => { view = "team"; teamMode = "week"; render(); openBriefing(); },
     job: () => { view = "board"; render(); if (assigned) openJob(assigned.id); },
     tour: () => { view = "board"; render(); openTour(); },
+    updates: () => { view = "board"; render(); openUpdates(); },
+    email: () => { view = "board"; render(); if (assigned) openEmail(assigned.id); },
+    confirm: () => { view = "sold"; render(); fillForm("f_", {title: "2-car modernization, phase 2", type: "modernization", hours: 16, address: "120 Front St W, Toronto", start: iso(addDays(mondayOf(new Date()), 7)), startHour: 7, parts: ["Door operators x2"], desc: "Two-car mod. Door operators on both cars."}, true); $("#jobForm").requestSubmit(); },
   };
   if (crew) { view = "mech"; calMech = "m" + crew[1]; render(); return; }
   if (!map[h]) return;
-  const opensDialog = ["filled","aifilled","suggest","emergency","whocan","daysheet","parts","briefing","job","tour"].includes(h);
+  const opensDialog = ["filled","aifilled","updates","email","confirm","suggest","emergency","whocan","daysheet","parts","briefing","job","tour"].includes(h);
   map[h](); if (!opensDialog) render();
+}
+
+/* Email the technician: the job as a plain email, plus a calendar invite they can save */
+function emailFor(j){
+  const m = mech(j.mechanic); const segs = segmentsFor(j); const first = segs[0], last = segs[segs.length - 1];
+  const when = segs.length === 1 ? fmtDate(first.date) + ", " + fmtTime(first.from) + " to " + fmtTime(first.to) : fmtDate(first.date) + " " + fmtTime(first.from) + " to " + fmtDate(last.date) + " " + fmtTime(last.to) + " (" + segs.length + " days)";
+  const subject = (j.urgent ? "URGENT: " : "") + "Job: " + j.title + " (" + fmtDate(first.date) + ")";
+  const body = ["Hi " + m.name.split(" ")[0] + ",", "", "You have a job scheduled.", "", "Job: " + j.title, "Type: " + TYPES[j.type], "Address: " + j.address, "When: " + when, "Hours: " + fmtHrs(j.hours),
+    "Parts: " + (j.parts.length ? j.parts.join(", ") : "none listed"), "Notes: " + (j.desc || "none"), "", "Tap Done on your day sheet when it is finished.", "", "ATTA dispatch"].join("\n");
+  return {to: m.email, subject, body};
+}
+function icsFor(j){
+  const segs = segmentsFor(j); const first = segs[0], last = segs[segs.length - 1];
+  const stamp = (date, h) => date.replace(/-/g, "") + "T" + pad(Math.floor(h)) + pad(Math.round((h % 1) * 60)) + "00";
+  const escI = s => String(s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//ATTA Crew Scheduler//EN", "BEGIN:VEVENT", "UID:" + j.id + "@atta-crew-scheduler", "DTSTAMP:" + stamp(TODAY, 7) + "Z",
+    "DTSTART:" + stamp(first.date, first.from), "DTEND:" + stamp(last.date, last.to), "SUMMARY:" + escI((j.urgent ? "URGENT: " : "") + j.title), "LOCATION:" + escI(j.address),
+    "DESCRIPTION:" + escI("Hours: " + fmtHrs(j.hours) + "\nParts: " + (j.parts.length ? j.parts.join(", ") : "none") + "\nNotes: " + (j.desc || "none")), "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+}
+function openEmail(id){
+  const j = job(id); if (!j || !j.mechanic) return;
+  const m = mech(j.mechanic); const e = emailFor(j);
+  const mailto = "mailto:" + encodeURIComponent(e.to) + "?subject=" + encodeURIComponent(e.subject) + "&body=" + encodeURIComponent(e.body);
+  const ics = "data:text/calendar;charset=utf-8," + encodeURIComponent(icsFor(j));
+  openDialog('<h3>Email the technician</h3><div class="sub">' + avatar(m, "sm") + '<span>' + esc(m.name) + ' &middot; ' + esc(m.email) + '</span></div>'
+    + '<div class="field"><label>Subject</label><input value="' + esc(e.subject) + '" readonly></div>'
+    + '<div class="field" style="margin-top:12px"><label>Message</label><textarea readonly style="min-height:230px;font-family:var(--font-mono);font-size:12.5px">' + esc(e.body) + '</textarea></div>'
+    + '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0">The calendar invite puts the job in the technician’s own calendar. In the real version this sends on its own when the job is assigned, and again if it moves.</p>'
+    + actionsBar('<a class="btn sm primary" href="' + mailto + '">' + ICON.note + 'Open in email app</a><button class="btn sm" data-action="copy" data-copy="email" data-id="' + j.id + '" type="button">' + ICON.copy + 'Copy email</button><a class="btn sm" href="' + ics + '" download="' + esc(j.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()) + '.ics">' + ICON.cal + 'Calendar invite (.ics)</a>'), true);
 }
 
 /* Copy helper: clipboard where allowed, with a selectable fallback */
@@ -1235,7 +1334,7 @@ function toast(msg, actions, kind, withUndo){
 }
 function resetDemo(){
   try { localStorage.removeItem(STORE_KEY); } catch (e) {}
-  state = seed(); weekOffset = 0; monthOffset = 0; calMech = "m1"; boardQuery = ""; history.length = 0; closeModal(); render(); toast("Demo reset. Sample jobs are back where they started.");
+  state = seed(); weekOffset = 0; monthOffset = 0; calMech = "m1"; boardQuery = ""; division = "all"; pendingJob = null; history.length = 0; closeModal(); render(); toast("Demo reset. Sample jobs are back where they started.");
 }
 
 /* ---------- Events (delegated) ---------- */
@@ -1243,6 +1342,7 @@ document.querySelectorAll(".nav button[data-view]").forEach(b => b.addEventListe
 $("#resetBtn").addEventListener("click", resetDemo);
 $("#emergencyBtn").addEventListener("click", openEmergency);
 $("#helpBtn").addEventListener("click", openTour);
+$("#updatesBtn").addEventListener("click", openUpdates);
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !$("#modal").hidden) { closeModal(); return; }
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
@@ -1263,12 +1363,18 @@ document.addEventListener("click", e => {
   if (a === "suggest") { e.stopPropagation(); openSuggest(id); return; }
   if (a === "assignto") { closeModal(); assign(id, t.dataset.mech); return; }
   if (a === "autoassign") { autoAssign(); return; }
-  if (a === "status") { e.stopPropagation(); setJobStatus(id, t.dataset.status); render(); if (t.dataset.sheet) { const [mm, dd] = t.dataset.sheet.split("|"); openDaySheet(mm, dd); } else openJob(id); toast(job(id).title + ": " + STATUS[t.dataset.status] + ".", [], "", true); return; }
+  if (a === "status") { e.stopPropagation(); const jj = job(id); const changed = jj && jj.status !== t.dataset.status; setJobStatus(id, t.dataset.status); render(); if (t.dataset.sheet) { const [mm, dd] = t.dataset.sheet.split("|"); openDaySheet(mm, dd); } else openJob(id);
+    if (changed) toast(t.dataset.status === "done" ? (jj.mechanic ? mech(jj.mechanic).name.split(" ")[0] + " finished " + jj.title + ". The office has been pinged." : jj.title + ": Done.") : jj.title + ": " + STATUS[t.dataset.status] + ".", [], t.dataset.status === "done" ? "" : "", true); return; }
   if (a === "daysheet") { e.stopPropagation(); openDaySheet(t.dataset.mech, t.dataset.date); return; }
   if (a === "parts") { openParts(t.dataset.mech); return; }
   if (a === "briefing") { openBriefing(); return; }
   if (a === "tour") { tourStep(Number(t.dataset.step)); return; }
-  if (a === "copy") { const k = t.dataset.copy; copyText(k === "daysheet" ? daySheetText(t.dataset.mech, t.dataset.date) : k === "parts" ? partsText(t.dataset.mech) : briefingText(), t); return; }
+  if (a === "copy") { const k = t.dataset.copy; copyText(k === "daysheet" ? daySheetText(t.dataset.mech, t.dataset.date) : k === "parts" ? partsText(t.dataset.mech) : k === "email" ? (function(){ const e = emailFor(job(t.dataset.id)); return "To: " + e.to + "\nSubject: " + e.subject + "\n\n" + e.body; })() : briefingText(), t); return; }
+  if (a === "email") { openEmail(id); return; }
+  if (a === "confirmadd") { confirmAdd(); return; }
+  if (a === "division") { division = t.dataset.div; render(); return; }
+  if (a === "updates") { openUpdates(); return; }
+  if (a === "readall") { (state.activity || []).forEach(x => x.read = true); save(); render(); openUpdates(); return; }
   if (a === "open") { openJob(id); return; }
   if (a === "edit") { openJob(id, true); return; }
   if (a === "saveedit") { saveEdit(id); return; }
