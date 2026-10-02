@@ -1315,7 +1315,7 @@ function openEmail(id){
     + '<div class="field"><label>Subject</label><input value="' + esc(e.subject) + '" readonly></div>'
     + '<div class="field" style="margin-top:12px"><label>Message</label><textarea readonly style="min-height:230px;font-family:var(--font-mono);font-size:12.5px">' + esc(e.body) + '</textarea></div>'
     + '<p style="font-size:12.5px;color:var(--muted);margin:12px 0 0">The calendar invite puts the job in the technician’s own calendar. In the real version this sends on its own when the job is assigned, and again if it moves.</p>'
-    + actionsBar('<a class="btn sm primary" href="' + mailto + '">' + ICON.note + 'Open in email app</a><button class="btn sm" data-action="copy" data-copy="email" data-id="' + j.id + '" type="button">' + ICON.copy + 'Copy email</button>(IN_VIEWER ? '<button class="btn sm" data-action="copy" data-copy="ics" data-id="' + j.id + '" type="button">' + ICON.cal + 'Copy calendar invite</button>' : '<a class="btn sm" href="' + ics + '" download="' + esc(j.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()) + '.ics">' + ICON.cal + 'Calendar invite (.ics)</a>')), true);
+    + actionsBar('<a class="btn sm primary" href="' + mailto + '">' + ICON.note + 'Open in email app</a><button class="btn sm" data-action="copy" data-copy="email" data-id="' + j.id + '" type="button">' + ICON.copy + 'Copy email</button>' + (IN_VIEWER ? '<button class="btn sm" data-action="copy" data-copy="ics" data-id="' + j.id + '" type="button">' + ICON.cal + 'Copy calendar invite</button>' : '<a class="btn sm" href="' + ics + '" download="' + esc(j.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()) + '.ics">' + ICON.cal + 'Calendar invite (.ics)</a>')), true);
 }
 
 /* Copy helper: clipboard where allowed, with a selectable fallback */
