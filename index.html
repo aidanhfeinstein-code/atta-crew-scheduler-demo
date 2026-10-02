@@ -126,7 +126,7 @@ main{min-width:0;background:radial-gradient(1100px 520px at 0% -10%,var(--brand-
 .av{width:34px;height:34px;border-radius:50%;flex:none;background:linear-gradient(145deg,hsl(var(--h,205) 42% calc(var(--av-l) + 8%)),hsl(var(--h,205) 45% calc(var(--av-l) - 6%)));color:#fff;font-family:var(--font-display);font-weight:800;font-size:12px;display:grid;place-items:center;letter-spacing:.02em;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22),0 1px 2px rgba(0,0,0,.15)}
 .av.sm{width:26px;height:26px;font-size:9.5px}
 .av.lg{width:44px;height:44px;font-size:15px}
-.ring{width:38px;height:38px;transform:rotate(-90deg);flex:none}
+.ring{width:34px;height:34px;transform:rotate(-90deg);flex:none}
 .ring circle{fill:none;stroke-width:3.6}
 .ring .rb{stroke:var(--surface-3)}
 .ring .rf{stroke:var(--ok);stroke-linecap:round;transition:stroke-dasharray .4s}
@@ -221,7 +221,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand);b
 .colhead{padding:13px 12px 11px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:18px 18px 0 0;transition:background .15s}
 .colhead:hover{background:var(--surface-2)}
 .colhead .who{display:flex;align-items:center;gap:10px;min-width:0}
-.colhead .n{font-family:var(--font-display);font-weight:700;font-size:13.5px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.colhead .n{font-family:var(--font-display);font-weight:700;font-size:13.5px;line-height:1.2;white-space:normal;overflow-wrap:normal;word-break:normal}
 .colhead .b{font-size:12px;color:var(--muted);margin-top:1px}
 .colhead .loadring{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none}
 .colhead .hrs{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
@@ -257,7 +257,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand);b
 .nowline::before{content:"";position:absolute;left:-1px;top:-5px;width:8px;height:8px;border-radius:50%;background:var(--brand)}
 .blk{position:absolute;left:5px;right:5px;border-radius:10px;background:linear-gradient(180deg,color-mix(in srgb,var(--tc,var(--brand)) 18%,var(--surface)),color-mix(in srgb,var(--tc,var(--brand)) 11%,var(--surface)));border:1px solid color-mix(in srgb,var(--tc,var(--brand)) 32%,transparent);border-left:4px solid var(--tc,var(--brand));color:var(--fg);padding:6px 8px;cursor:grab;overflow:hidden;
   font-size:12.5px;line-height:1.3;box-shadow:var(--shadow-xs);z-index:2;transition:box-shadow .12s,transform .12s}
-.blk:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.blk:hover,.blk:focus-within{box-shadow:var(--shadow);transform:translateY(-1px);z-index:6}
 .blk:active{cursor:grabbing}
 .blk.dragging{opacity:.5}
 .blk .t{font-weight:700;color:color-mix(in srgb,var(--tc,var(--brand)) 78%,var(--fg))}
@@ -396,7 +396,9 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand);b
 .toastmsg.tour button:first-of-type{background:var(--primary);color:var(--primary-ink);border-color:transparent}
 
 /* ---------- Responsive ---------- */
-@media (max-width:1180px){ .columns{grid-template-columns:repeat(3,minmax(0,1fr))} .app{grid-template-columns:220px minmax(0,1fr)} }
+@media (max-width:1600px){ .columns{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (max-width:1400px){ .columns{grid-template-columns:repeat(3,minmax(0,1fr))} .board{grid-template-columns:240px minmax(0,1fr)} }
+@media (max-width:1180px){ .app{grid-template-columns:220px minmax(0,1fr)} }
 @media (max-width:900px){
   .app{grid-template-columns:1fr}
   .sidebar{position:sticky;top:env(safe-area-inset-top,0px);height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;border-right:0;border-bottom:1px solid var(--line);z-index:20;overflow:visible}
@@ -573,6 +575,7 @@ let teamMode = "week";      // "week" or "month"
 let calMech = "m1";         // mechanic whose calendar is open
 let boardQuery = "";        // search box on the Crew Board
 let division = "all";       // crew division filter on the board and team calendar
+let boardMode = "week";     // the board's load rings and chips follow a week or a month
 let pendingJob = null;      // a sold job waiting for the "is this complete?" check
 const history = [];         // snapshots for Undo
 const IN_VIEWER = !!(window.claude && typeof window.claude.use === "function");   // inside claude.ai, plain download links do nothing
@@ -851,8 +854,22 @@ function confirmAdd(){
 }
 
 /* Crew Board */
+function monthDates(){
+  const now = new Date(); const first = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1); const last = new Date(first.getFullYear(), first.getMonth() + 1, 0);
+  const out = []; for (let d = first; d <= last; d = addDays(d, 1)) if (d.getDay() !== 0 && d.getDay() !== 6) out.push(iso(d)); return out;
+}
+function monthLabel(){ const f = new Date(new Date().getFullYear(), new Date().getMonth() + monthOffset, 1); return MONTH_LONG[f.getMonth()] + " " + f.getFullYear(); }
+function monthNav(){
+  return '<div class="weeknav"><button class="btn sm icon" data-action="month" data-n="-1" type="button" aria-label="Previous month">&larr;</button>'
+    + '<span class="label">' + monthLabel() + '</span>'
+    + '<button class="btn sm icon" data-action="month" data-n="1" type="button" aria-label="Next month">&rarr;</button>'
+    + (monthOffset ? '<button class="btn sm ghost" data-action="month" data-n="0" type="button">This month</button>' : '') + '</div>';
+}
 function renderBoard(){
-  const dates = weekDates();
+  const month = boardMode === "month";
+  const dates = month ? monthDates() : weekDates();
+  const capacity = CAPACITY * dates.length;
+  const modeToggle = '<div class="tabs small" role="group" aria-label="Range"><button type="button" data-action="boardmode" data-mode="week" aria-selected="' + !month + '">Week</button><button type="button" data-action="boardmode" data-mode="month" aria-selected="' + month + '">Month</button></div>';
   const queue = state.jobs.filter(j => !j.mechanic).sort((a,b) => (b.urgent - a.urgent) || a.start.localeCompare(b.start));
   const cards = queue.length ? queue.map(cardHTML).join("") : '<div class="empty"><img src="' + MARK + '" alt="">Queue is empty. Every sold job has a mechanic.</div>';
   const cols = crews().map((m, i) => {
@@ -860,18 +877,18 @@ function renderBoard(){
     const loads = dates.map(d => dayLoad(m.id, d));
     const weekHrs = loads.reduce((a,l) => a + l.hours, 0);
     const overDays = dates.filter((d,i) => loads[i].over);
-    const pct = Math.min(100, weekHrs / (CAPACITY*5) * 100);
+    const pct = Math.min(100, weekHrs / capacity * 100);
     const chips = jobs.length ? jobs.map(j => chipHTML(j, dates)).join("") : '<div class="empty" style="padding:12px">Drop a job here</div>';
     return '<div class="col' + (overDays.length ? " overbooked" : "") + '" data-drop="mech" data-mech="' + m.id + '" style="--i:' + i + '">'
       + '<div class="colhead" data-action="opencal" data-mech="' + m.id + '" title="Open ' + esc(m.name) + '’s calendar" tabindex="0" role="button">'
       + '<div class="who">' + avatar(m) + '<div style="min-width:0;flex:1"><div class="n">' + esc(m.name) + '</div><div class="b">' + esc(m.base) + '</div></div>'
-      + '<div class="loadring">' + ring(pct, overDays.length > 0) + '<span class="hrs">' + fmtHrs(weekHrs) + '</span></div></div>'
-      + (overDays.length ? '<span class="flag">Over-booked ' + overDays.map(d => DOW[parse(d).getDay()]).join(", ") + '</span>' : '')
+      + '<div class="loadring">' + ring(pct, overDays.length > 0) + '<span class="hrs">' + fmtHrs(weekHrs) + (month ? ' / ' + capacity : '') + '</span></div></div>'
+      + (overDays.length ? '<span class="flag">Over-booked ' + overDays.slice(0, 3).map(d => month ? fmtShort(d) : DOW[parse(d).getDay()]).join(", ") + (overDays.length > 3 ? " +" + (overDays.length - 3) : "") + '</span>' : '')
       + '</div><div class="colbody">' + chips + '</div></div>';
   }).join("");
   main.innerHTML =
     pageHead("Crew Board", "Drag a job onto a mechanic. It lands on their calendar. Click a name to open it.",
-      divisionTabs() + '<label class="search">' + ICON.search + '<input id="boardSearch" type="search" placeholder="Find a job or address" value="' + esc(boardQuery) + '" aria-label="Find a job"></label>' + weekNav())
+      divisionTabs() + modeToggle + '<label class="search">' + ICON.search + '<input id="boardSearch" type="search" placeholder="Find a job or address" value="' + esc(boardQuery) + '" aria-label="Find a job"></label>' + (month ? monthNav() : weekNav()))
     + '<div class="content board"><aside class="rail"><h3>' + ICON.inbox + 'Unassigned <span class="pill warn">' + queue.length + '</span></h3><p class="hint">New sold jobs wait here until someone drags them onto a crew, or let the board pick.</p>'
     + (queue.length ? '<div class="railtools"><button class="btn sm primary" data-action="autoassign" type="button">' + ICON.wand + 'Auto-assign all</button></div>' : '')
     + '<div class="cards" data-drop="queue">' + cards + '</div></aside>'
@@ -1097,7 +1114,7 @@ function openJob(id, edit){
     + '<dt>Pricing</dt><dd style="color:var(--muted)">Not stored here.</dd></dl>';
   const actions = edit
     ? '<div class="actions"><button class="btn sm primary" data-action="saveedit" data-id="' + j.id + '" type="button">Save changes</button><button class="btn sm ghost" data-action="open" data-id="' + j.id + '" type="button">Cancel</button></div>'
-    : '<div class="actions"><button class="btn sm" data-action="adj" data-id="' + j.id + '" data-n="0.5" type="button">+30 min</button><button class="btn sm" data-action="adj" data-id="' + j.id + '" data-n="1" type="button">+1 hr</button>'
+    : '<div class="actions"><button class="btn sm" data-action="adj" data-id="' + j.id + '" data-n="0.5" type="button">+30 min</button><button class="btn sm" data-action="adj" data-id="' + j.id + '" data-n="1" type="button">+1 hr</button><button class="btn sm" data-action="adj" data-id="' + j.id + '" data-n="-0.5" type="button">&minus;30 min</button>'
     + '<button class="btn sm" data-action="edit" data-id="' + j.id + '" type="button">Edit</button>'
     + (m ? '<button class="btn sm" data-action="email" data-id="' + j.id + '" type="button">' + ICON.note + 'Email technician</button><button class="btn sm" data-action="unassign" data-id="' + j.id + '" type="button">Send back to queue</button>' : '<button class="btn sm brand" data-action="suggest" data-id="' + j.id + '" type="button">' + ICON.wand + 'Suggest a crew</button>')
     + '<span class="spacer"></span><button class="btn sm ghost" data-action="remove" data-id="' + j.id + '" type="button">Remove job</button><button class="btn sm primary" data-action="close" type="button">Close</button></div>';
@@ -1339,7 +1356,7 @@ function toast(msg, actions, kind, withUndo){
 }
 function resetDemo(){
   try { localStorage.removeItem(STORE_KEY); } catch (e) {}
-  state = seed(); weekOffset = weekOffsetOf(state.anchor); monthOffset = 0; calMech = "m1"; boardQuery = ""; division = "all"; pendingJob = null; history.length = 0; closeModal(); render(); toast("Demo reset. Sample jobs are back where they started.");
+  state = seed(); weekOffset = weekOffsetOf(state.anchor); monthOffset = 0; boardMode = "week"; calMech = "m1"; boardQuery = ""; division = "all"; pendingJob = null; history.length = 0; closeModal(); render(); toast("Demo reset. Sample jobs are back where they started.");
 }
 
 /* ---------- Events (delegated) ---------- */
@@ -1395,6 +1412,7 @@ document.addEventListener("click", e => {
   if (a === "week") { const n = Number(t.dataset.n); weekOffset = n === 0 ? 0 : weekOffset + n; render(); return; }
   if (a === "month") { const n = Number(t.dataset.n); monthOffset = n === 0 ? 0 : monthOffset + n; render(); return; }
   if (a === "teammode") { teamMode = t.dataset.mode; render(); return; }
+  if (a === "boardmode") { boardMode = t.dataset.mode; render(); return; }
   if (a === "gotoweek") { weekOffset = weekOffsetOf(t.dataset.date); teamMode = "week"; view = "team"; render(); return; }
 });
 document.addEventListener("keydown", e => {
