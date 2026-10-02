@@ -233,7 +233,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand);b
 .chip .w{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);margin-top:3px}
 .chip.later{opacity:.6}
 .chip.done{opacity:.55} .chip.done .t{color:var(--muted)}
-.chip.urgent{outline:2px solid var(--danger);outline-offset:-1px}
+.chip.urgent{outline:2px solid var(--danger);outline-offset:-1px;opacity:1}
 .colhead .flag{display:inline-flex;align-items:center;gap:5px;margin-top:9px;font-size:11.5px;font-weight:600;color:var(--danger);background:var(--danger-soft);padding:2px 8px;border-radius:999px}
 .colhead .flag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
 
@@ -438,7 +438,7 @@ textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand);b
       <button type="button" id="updatesBtn" class="updates" title="What the crews have done"><svg class="i" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21h4"/></svg>Updates<span class="badge" id="updatesBadge">0</span></button>
     </nav>
     <div class="sb-section">
-      <div class="sb-label">Crews <span>this week</span></div>
+      <div class="sb-label">Crews <span id="crewWeek">this week</span></div>
       <div class="crewlist" id="crewList"></div>
     </div>
     <div class="sb-bottom">
@@ -519,7 +519,8 @@ const fmtHrs = h => (Number.isInteger(h) ? h : h.toFixed(1)) + " h";
 const TODAY = iso(new Date());
 
 function seed(){
-  const W = mondayOf(new Date());
+  const dow = new Date().getDay(); const W0 = mondayOf(new Date());
+  const W = (dow === 4 || dow === 5 || dow === 6) ? addDays(W0, 7) : W0;   // late in the week, the sample week is next week
   const day = n => iso(addDays(W, n));
   const nextW = n => iso(addDays(W, 7+n));
   const prevW = n => iso(addDays(W, n-7));
@@ -552,19 +553,21 @@ function seed(){
     {id:"j10", type:"repair", title:"Intermittent door reopen, car 3", address:"25 Harbour St, Toronto", start:nextW(0), startHour:7, hours:4, parts:["Door detector edge"], desc:"Detector edge failing on cold mornings. Replace and test.", mechanic:null},
     {id:"j11", type:"escalator", title:"Handrail replacement, north escalator", address:"1 Steeles Ave E, Markham", start:nextW(1), startHour:7, hours:8, parts:["Handrail x2"], desc:"Both handrails cracked. One day, before store opening.", mechanic:null},
   ];
-  jobs.forEach(j => { j.status = j.start < TODAY ? "done" : "scheduled"; j.urgent = false; });
+  const anchor = iso(W);
+  jobs.forEach(j => { j.status = j.start < anchor ? "done" : "scheduled"; j.urgent = false; });
   const first = jobs.find(j => j.start === TODAY && j.mechanic); if (first) first.status = "onsite";
   const activity = [];
   const now = Date.now();
   if (first) activity.push({id: "a1", ts: now - 42*60000, kind: "onsite", jobId: first.id, text: mech(first.mechanic).name + " is on site at " + first.address, read: false});
+  else { const y = jobs.find(j => j.id === "p4"); if (y) activity.push({id: "a1", ts: now - 2*3600000, kind: "done", jobId: y.id, text: mech(y.mechanic).name + " finished " + y.title, read: false}); }
   const p = jobs.find(j => j.id === "p3"); if (p) activity.push({id: "a2", ts: now - 6*3600000, kind: "done", jobId: p.id, text: mech(p.mechanic).name + " finished " + p.title, read: true});
-  return { jobs, activity };
+  return { jobs, activity, anchor };
 }
 
 /* ---------- State ---------- */
 let state = load();
 let view = "board";
-let weekOffset = 0;         // weeks from the current week
+let weekOffset = 0;         // weeks from the current week; set to the sample week on load
 let monthOffset = 0;        // months from the current month
 let teamMode = "week";      // "week" or "month"
 let calMech = "m1";         // mechanic whose calendar is open
@@ -684,7 +687,8 @@ function pageHead(title, sub, tools, left){
 function ring(pct, hot){ const c = 2 * Math.PI * 14; return '<svg class="ring' + (hot ? " hot" : "") + '" viewBox="0 0 36 36" aria-hidden="true"><circle class="rb" cx="18" cy="18" r="14"/><circle class="rf" cx="18" cy="18" r="14" style="stroke-dasharray:' + (c * Math.min(100, pct) / 100).toFixed(1) + ' ' + c.toFixed(1) + '"/></svg>'; }
 function renderSidebar(){
   const el = $("#crewList"); if (!el) return;
-  const W = mondayOf(new Date()); const dates = [0,1,2,3,4].map(n => iso(addDays(W, n)));
+  const W = state.anchor ? parse(state.anchor) : mondayOf(new Date()); const dates = [0,1,2,3,4].map(n => iso(addDays(W, n)));
+  const lbl = $("#crewWeek"); if (lbl) lbl.textContent = fmtShort(dates[0]) + " to " + fmtShort(dates[4]);
   el.innerHTML = MECHANICS.map(m => {
     const loads = dates.map(d => dayLoad(m.id, d)); const hrs = loads.reduce((a,l) => a + l.hours, 0); const over = loads.some(l => l.over);
     return '<button type="button" class="crew' + (view === "mech" && calMech === m.id ? " active" : "") + (over ? " over" : "") + '" data-action="opencal" data-mech="' + m.id + '" title="Open ' + esc(m.name) + '’s calendar">'
@@ -1239,10 +1243,10 @@ const TOUR = [
   {t:"Sold Jobs", d:"Paste a job note the way it was sold. Click Fill fields with AI and the address, date, hours, parts and notes fill themselves. There is no price field.", go:() => { view = "sold"; render(); }},
   {t:"Unassigned queue", d:"New jobs wait here until they have a crew. Drag a card onto a mechanic, or click the wand for a suggestion. The tabs at the top switch between Service, Modernization and Escalator crews.", go:() => { view = "board"; division = "all"; render(); }},
   {t:"Suggest a crew", d:"The board ranks all ten mechanics on area, hours already booked and escalator work, and says why. One click assigns.", go:() => { view = "board"; render(); const j = state.jobs.find(x => !x.mechanic); if (j) openSuggest(j.id); }},
-  {t:"A mechanic\u2019s week", d:"Each job is a block. Long jobs split across days on their own. Use +30 min and +1 hr, or drag a block to another day or time.", go:() => { calMech = "m1"; weekOffset = 0; view = "mech"; render(); }},
-  {t:"Team Calendar", d:"Everyone at once. Red cells are over 8 hours or overlapping. Drag between cells to rebalance. Switch to Month to zoom out further.", go:() => { teamMode = "week"; weekOffset = 0; view = "team"; render(); }},
+  {t:"A mechanic\u2019s week", d:"Each job is a block. Long jobs split across days on their own. Use +30 min and +1 hr, or drag a block to another day or time.", go:() => { calMech = "m1"; weekOffset = weekOffsetOf(state.anchor || TODAY); view = "mech"; render(); }},
+  {t:"Team Calendar", d:"Everyone at once. Red cells are over 8 hours or overlapping. Drag between cells to rebalance. Switch to Month to zoom out further.", go:() => { teamMode = "week"; weekOffset = weekOffsetOf(state.anchor || TODAY); view = "team"; render(); }},
   {t:"Emergency call", d:"An entrapment comes in. Type the address, and the board shows who can go right now, closest first.", go:() => { view = "board"; render(); openEmergency(); }},
-  {t:"Day sheet and parts", d:"What the mechanic sees on a phone: address, parts, notes, and a Done button. When they tap Done, the office gets a ping in Updates. Email technician sends the job with a calendar invite.", go:() => { calMech = "m6"; weekOffset = 0; view = "mech"; render(); openDaySheet("m6"); }},
+  {t:"Day sheet and parts", d:"What the mechanic sees on a phone: address, parts, notes, and a Done button. When they tap Done, the office gets a ping in Updates. Email technician sends the job with a calendar invite.", go:() => { calMech = "m6"; weekOffset = weekOffsetOf(state.anchor || TODAY); view = "mech"; render(); openDaySheet("m6"); }},
   {t:"Nothing gets lost", d:"Every action has Undo. Search finds any address. Keys 1, 2, 3 switch views, Z undoes, and ? opens this tour. Reset demo puts the sample data back.", go:() => { closeModal(); view = "board"; render(); }},
 ];
 function openTour(){
@@ -1270,7 +1274,7 @@ function applyHash(){
     mech: () => { view = "mech"; calMech = "m1"; },
     filled: () => { view = "sold"; render(); fallback(SAMPLE_NOTE, "AI is not available in this view."); },
     /* Preview of the screen after the AI has filled the fields, for the tutorial pictures. The live page fills these from the AI call. */
-    aifilled: () => { view = "sold"; render(); const W = mondayOf(new Date()); fillForm("f_", {title: "2-car modernization, phase 2", type: "modernization", hours: 16, address: "120 Front St W, Toronto", start: iso(addDays(W, 7)), startHour: 7, parts: ["Door operators x2"], desc: "Two-car mod. Door operators on both cars, about 16 hours, starting Monday."}, true); setStatus("Filled by AI. Check the fields, then add it."); },
+    aifilled: () => { view = "sold"; render(); const W = parse(state.anchor || iso(mondayOf(new Date()))); fillForm("f_", {title: "2-car modernization, phase 2", type: "modernization", hours: 16, address: "120 Front St W, Toronto", start: iso(W > new Date() ? W : addDays(W, 7)), startHour: 7, parts: ["Door operators x2"], desc: "Two-car mod. Door operators on both cars, about 16 hours, starting Monday."}, true); setStatus("Filled by AI. Check the fields, then add it."); },
     suggest: () => { view = "board"; render(); if (first) openSuggest(first.id); },
     emergency: () => { view = "board"; render(); openEmergency(); },
     whocan: () => { view = "board"; render(); openEmergency(); $("#em_form").requestSubmit(); },
@@ -1281,7 +1285,7 @@ function applyHash(){
     tour: () => { view = "board"; render(); openTour(); },
     updates: () => { view = "board"; render(); openUpdates(); },
     email: () => { view = "board"; render(); if (assigned) openEmail(assigned.id); },
-    confirm: () => { view = "sold"; render(); fillForm("f_", {title: "2-car modernization, phase 2", type: "modernization", hours: 16, address: "120 Front St W, Toronto", start: iso(addDays(mondayOf(new Date()), 7)), startHour: 7, parts: ["Door operators x2"], desc: "Two-car mod. Door operators on both cars."}, true); $("#jobForm").requestSubmit(); },
+    confirm: () => { view = "sold"; render(); const W = parse(state.anchor || iso(mondayOf(new Date()))); fillForm("f_", {title: "2-car modernization, phase 2", type: "modernization", hours: 16, address: "120 Front St W, Toronto", start: iso(W > new Date() ? W : addDays(W, 7)), startHour: 7, parts: ["Door operators x2"], desc: "Two-car mod. Door operators on both cars."}, true); $("#jobForm").requestSubmit(); },
   };
   if (crew) { view = "mech"; calMech = "m" + crew[1]; render(); return; }
   if (!map[h]) return;
@@ -1335,7 +1339,7 @@ function toast(msg, actions, kind, withUndo){
 }
 function resetDemo(){
   try { localStorage.removeItem(STORE_KEY); } catch (e) {}
-  state = seed(); weekOffset = 0; monthOffset = 0; calMech = "m1"; boardQuery = ""; division = "all"; pendingJob = null; history.length = 0; closeModal(); render(); toast("Demo reset. Sample jobs are back where they started.");
+  state = seed(); weekOffset = weekOffsetOf(state.anchor); monthOffset = 0; calMech = "m1"; boardQuery = ""; division = "all"; pendingJob = null; history.length = 0; closeModal(); render(); toast("Demo reset. Sample jobs are back where they started.");
 }
 
 /* ---------- Events (delegated) ---------- */
@@ -1430,7 +1434,7 @@ document.addEventListener("drop", e => {
 });
 
 /* Keep the page's state across a live republish, if the viewer offers that hook. */
-function start(){ render(); try { applyHash(); } catch (e) {} window.addEventListener("hashchange", () => { closeModal(); try { applyHash(); } catch (e) {} }); }
+function start(){ if (state.anchor) weekOffset = weekOffsetOf(state.anchor); render(); try { applyHash(); } catch (e) {} window.addEventListener("hashchange", () => { closeModal(); try { applyHash(); } catch (e) {} }); }
 try {
   if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({state, view, weekOffset, calMech, teamMode, monthOffset}));
   if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(data => { if (data && data.state && Array.isArray(data.state.jobs)) { state = data.state; view = data.view || view; weekOffset = data.weekOffset || 0; calMech = data.calMech || calMech; teamMode = data.teamMode || teamMode; monthOffset = data.monthOffset || 0; } start(); });
